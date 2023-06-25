@@ -66,14 +66,14 @@ let parseExpr () =
     "{m - a}" |> success (RecordRestrict(Var "m", "a"))
     "{m - a" |> failure
     "m - a" |> failure
-    // "{a = x}" |> success (RecordExtend("a", Var "x", RecordEmpty))
+    "{a = x}" |> success (RecordExtend("a", Var "x", RecordEmpty))
     "{a = x" |> failure
-    // "{a=x, b = y}" |> success (RecordExtend("a", Var "x", RecordExtend("b", Var "y", RecordEmpty)))
-    // "{b = y ,a=x}" |> success (RecordExtend("b", Var "y", RecordExtend("a", Var "x", RecordEmpty)))
-    // "{a=x,h=w,d=y,b=q,g=z,c=t,e=s,f=r}" |> success (RecordExtend("a", Var "x", RecordExtend("h", Var "w", RecordExtend("d", Var "y", RecordExtend("b", Var "q", RecordExtend("g", Var "z", RecordExtend("c", Var "t", RecordExtend("e", Var "s", RecordExtend("f", Var "r", RecordEmpty)))))))))
+    "{a=x, b = y}" |> success (RecordExtend("a", Var "x", RecordExtend("b", Var "y", RecordEmpty)))
+    "{b = y ,a=x}" |> success (RecordExtend("b", Var "y", RecordExtend("a", Var "x", RecordEmpty)))
+    "{a=x,h=w,d=y,b=q,g=z,c=t,e=s,f=r}" |> success (RecordExtend("a", Var "x", RecordExtend("h", Var "w", RecordExtend("d", Var "y", RecordExtend("b", Var "q", RecordExtend("g", Var "z", RecordExtend("c", Var "t", RecordExtend("e", Var "s", RecordExtend("f", Var "r", RecordEmpty)))))))))
     // "{a = x|m}" |> success (RecordExtend ("a", Var "x", Var "m"))
     "{a | m}" |> failure
     // "{ a = x, b = y | m}" |> success (RecordExtend("a", Var "x", RecordExtend("b", Var "y", Var "m")))
     // "{ a = x, b = y | {m - a} }" |> success (RecordExtend("a", Var "x", RecordExtend("b", Var "y", RecordRestrict(Var "m", "a"))))
     "{ b = y | m - a }" |> failure
-// "let x = {a = f(x), b = y.b} in { a = fun z -> z | {x - a} }" |> success (Let("x", RecordExtend("a", Call(Var "f", [Var "x"]), RecordExtend("b", RecordSelect(Var "y", "b"), RecordEmpty)), RecordExtend("a", Fun(["z"], Var "z"), RecordRestrict(Var "x", "a"))))
+    // "let x = {a = f(x), b = y.b} in { a = fun z -> z | {x - a} }" |> success (Let("x", RecordExtend("a", Call(Var "f", [Var "x"]), RecordExtend("b", RecordSelect(Var "y", "b"), RecordEmpty)), RecordExtend("a", Fun(["z"], Var "z"), RecordRestrict(Var "x", "a"))))
