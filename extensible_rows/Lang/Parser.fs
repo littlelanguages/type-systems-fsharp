@@ -40,12 +40,13 @@ let private factor: Parser'<Expr> =
     (lowerIdentifier |>> Var)
     <|> (between (pchar_ws '(') (pchar_ws ')') expr)
     <|> (pchar_ws '{' >>. expr .>> pchar_ws '-' .>>. lowerIdentifier .>> pchar_ws '}'
-         |>> (fun (e, n) -> RecordRestrict(e, n))
+         |>> fun (e, n) -> RecordRestrict(e, n)
          |> attempt)
-    <|> ((pchar_ws '{')
-         >>. (sepBy (lowerIdentifier .>> (pchar_ws '=') .>>. expr) (pchar_ws ','))
-         .>> (pchar_ws '}')
-         |>> fun fields -> List.foldBack (fun (n, v) e -> RecordExtend(n, v, e)) fields RecordEmpty)
+    <|> (pchar_ws '{'
+         >>. sepBy (lowerIdentifier .>> pchar_ws '=' .>>. expr) (pchar_ws ',')
+         .>>. opt (pchar_ws '|' >>. expr)
+         .>> pchar_ws '}'
+         |>> fun (fields, r) -> List.foldBack (fun (n, v) e -> RecordExtend(n, v, e)) fields (r |> Option.defaultValue RecordEmpty))
 
 let private recordSelect: Parser'<Expr> =
     factor .>>. many ((pchar_ws '.') >>. lowerIdentifier)
