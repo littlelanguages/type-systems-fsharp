@@ -7,6 +7,10 @@ type Expr =
     | Call of Expr * List<Expr> (* application *)
     | Fun of Name list * Expr (* abstraction *)
     | Let of Name * Expr * Expr (* let *)
+    | RecordSelect of Expr * Name (* selecting value of label: `r.a` *)
+    | RecordExtend of Name * Expr * Expr (* extending a record: `{a = 1 | r}` *)
+    | RecordRestrict of Expr * Name (* deleting a label: `{r - a}` *)
+    | RecordEmpty (* empty record: `{}` *)
 
 type Id = int
 type Level = int
@@ -34,7 +38,18 @@ let string_of_expr expr : string =
             let let_str =
                 "let " + var_name + " = " + f false value_expr + " in " + f false body_expr in
 
-            if is_simple then "(" + let_str + ")" else let_str in
+            if is_simple then "(" + let_str + ")" else let_str
+        | RecordEmpty -> "{}"
+        | RecordSelect(record_expr, label) -> f true record_expr + "." + label
+        | RecordRestrict(record_expr, label) -> "{" + f false record_expr + " - " + label + "}"
+        | RecordExtend(label, expr, record_expr) ->
+            let rec g str =
+                function
+                | RecordEmpty -> str
+                | RecordExtend(label, expr, record_expr) -> g (str + ", " + label + " = " + f false expr) record_expr
+                | other_expr -> str + " | " + f false other_expr in
+
+            "{" + g (label + " = " + f false expr) record_expr + "}" in
 
     f false expr
 
