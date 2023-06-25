@@ -24,7 +24,7 @@ algorithm and associated optimizations was written by
 
 The basic terms of Lambda Calculus and the structure of the types are defined in
 [`Expr.fs`](./Lang/Expr.fs). The parser is implemented in
-[`Parser.fs`](./Lang/Parser.fs) using a
+[`Parser.fs`](./Lang/Parser.fs) using
 [FParsec](https://www.quanttec.com/fparsec/). The main type inference is
 implemented in the file [`Infer.fs`](./Lang/Infer.fs).
 
