@@ -4,7 +4,7 @@ open Xunit
 open Expr
 open Core
 
-let success expected name =
+let private success expected name =
     let actual' = core.[name] |> string_of_ty
 
     if (expected <> actual') then

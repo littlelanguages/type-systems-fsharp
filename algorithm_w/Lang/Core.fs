@@ -1,11 +1,11 @@
 module Core
 
-let core =
-    let add name tyString env =
-        match Parser.parseType tyString with
-        | Ok ty -> Infer.Env.extend env name ty
-        | Error msg -> failwith msg
+let private add name tyString env =
+    match Parser.parseType tyString with
+    | Ok ty -> Infer.Env.extend env name ty
+    | Error msg -> failwith msg
 
+let core =
     Infer.Env.empty
     |> add "head" "forall[a] list[a] -> a"
     |> add "tail" "forall[a] list[a] -> list[a]"

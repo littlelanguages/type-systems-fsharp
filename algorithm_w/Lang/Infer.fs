@@ -11,11 +11,13 @@ let next_id () =
 
 let reset_id () = current_id := 0
 
-let new_var level = TVar(ref (Unbound(next_id (), level)))
+let private new_var level = TVar(ref (Unbound(next_id (), level)))
+
 let new_gen_var () = TVar(ref (Generic(next_id ())))
 
 exception Error of string
-let error msg = raise (Error msg)
+
+let private error msg = Error msg |> raise
 
 module Env =
     type env = Map<string, Ty>
@@ -24,7 +26,7 @@ module Env =
     let extend env name ty = Map.add name ty env
     let lookup env name = Map.find name env
 
-let occurs_check_adjust_levels tvar_id tvar_level ty =
+let private occurs_check_adjust_levels tvar_id tvar_level ty =
     let rec f =
         function
         | TVar { contents = Link ty } -> f ty
@@ -46,7 +48,7 @@ let occurs_check_adjust_levels tvar_id tvar_level ty =
 
     f ty
 
-let rec unify ty1 ty2 =
+let rec private unify ty1 ty2 =
     if ty1 = ty2 then
         ()
     else
@@ -78,7 +80,7 @@ let rec generalize level =
     | TVar { contents = Unbound _ }
     | TConst _ as ty -> ty
 
-let instantiate level ty =
+let private instantiate level ty =
     let id_var_map = new System.Collections.Generic.Dictionary<Id, Ty>() in
 
     let rec f ty =
@@ -98,7 +100,7 @@ let instantiate level ty =
 
     f ty
 
-let rec match_fun_ty num_params =
+let rec private match_fun_ty num_params =
     function
     | TArrow(param_ty_list, return_ty) ->
         if List.length param_ty_list <> num_params then

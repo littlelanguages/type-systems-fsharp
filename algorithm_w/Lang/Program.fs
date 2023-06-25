@@ -1,6 +1,6 @@
 ﻿module Program
 
-let typeOf input =
+let private typeOf input =
     match Parser.parseExpr input with
     | Error msg -> msg
     | Ok expr ->

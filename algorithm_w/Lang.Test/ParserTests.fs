@@ -10,7 +10,7 @@ let ``parse lowerIdentifier`` () =
     Assert.Equal("nAm22e" |> Core.Ok, Parser.parseProduction Parser.lowerIdentifier "nAm22e")
     Assert.True(Parser.parseProduction Parser.lowerIdentifier "Name" |> Core.Result.isError)
 
-let success input expected =
+let private success input expected =
     let expected' = expected |> Core.Ok
     let actual = Parser.parseExpr input
 
@@ -20,7 +20,7 @@ let success input expected =
 
     Assert.Equal(expected', actual)
 
-let failure input =
+let private failure input =
     let parseResult = Parser.parseExpr input
 
     if (parseResult |> isOk) then
