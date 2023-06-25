@@ -1,14 +1,13 @@
 module Parser
 
 open FParsec
-
 open Expr
 
 type UserState = unit // doesn't have to be unit, of course
 
-let private keyWordSet = Set.ofSeq [| "fun"; "let"; "in"; "forall" |]
-
 type Parser'<'t> = Parser<'t, UserState>
+
+let private keyWordSet = Set.ofSeq [| "fun"; "let"; "in"; "forall" |]
 
 let private ws: Parser'<unit> = CharParsers.spaces
 
@@ -45,7 +44,8 @@ let private param: Parser'<List<Expr>> =
     <|> (lowerIdentifier |>> (fun name -> [ Var name ]))
 
 let private apply: Parser'<Expr> =
-    pipe2 factor (many param) (fun fn arg_list -> List.fold (fun f a -> Call(f, a)) fn arg_list)
+    factor .>>. (many param)
+    |>> (fun (fn, arg_list) -> List.fold (fun f a -> Call(f, a)) fn arg_list)
 
 exprRef.Value <-
     apply
