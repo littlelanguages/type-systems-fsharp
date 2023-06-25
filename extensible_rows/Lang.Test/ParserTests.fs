@@ -10,7 +10,7 @@ let ``parse lowerIdentifier`` () =
     Assert.Equal("nAm22e" |> Core.Ok, Parser.parseProduction Parser.lowerIdentifier "nAm22e")
     Assert.True(Parser.parseProduction Parser.lowerIdentifier "Name" |> Core.Result.isError)
 
-let private success input expected =
+let private success expected input =
     let expected' = expected |> Core.Ok
     let actual = Parser.parseExpr input
 
@@ -31,19 +31,20 @@ let private failure input =
 [<Fact>]
 let parseExpr () =
     "" |> failure
-    Var "a" |> success "a"
-    Var "a" |> success "(a)"
-    (Var "f", [ Var "x"; Var "y" ]) |> Call |> success "f(x, y)"
-    (Call(Var "f", [ Var "x" ]), [ Var "y" ]) |> Call |> success "f(x)(y)"
-    (Fun([ "x" ], Var "x")) |> success "fun x -> x"
+    "a" |> success (Var "a")
+    "(a)" |> success (Var "a")
+    "f(x, y)" |> success (Call(Var "f", [ Var "x"; Var "y" ]))
 
-    (Let("f", Fun([ "x"; "y" ], Call(Var "g", [ Var "x"; Var "y" ])), Call(Var "f", [ Var "a"; Var "b" ])))
-    |> success "let f = fun x y -> g(x, y) in f(a, b)"
+    "f(x)(y)" |> success (Call(Call(Var "f", [ Var "x" ]), [ Var "y" ]))
+    "fun x -> x" |> success (Fun([ "x" ], Var "x"))
 
-    (Let("x", Var "a", Let("y", Var "b", Call(Var "f", [ Var "x"; Var "y" ]))))
-    |> success "let x = a in let y = b in f(x, y)"
+    "let f = fun x y -> g(x, y) in f(a, b)"
+    |> success (Let("f", Fun([ "x"; "y" ], Call(Var "g", [ Var "x"; Var "y" ])), Call(Var "f", [ Var "a"; Var "b" ])))
 
-    (Call(Var "f", [ Var "x" ])) |> success "f x"
+    "let x = a in let y = b in f(x, y)"
+    |> success (Let("x", Var "a", Let("y", Var "b", Call(Var "f", [ Var "x"; Var "y" ]))))
+
+    "f x" |> success (Call(Var "f", [ Var "x" ]))
 
     "let a = one" |> failure
     "a, b" |> failure
@@ -51,10 +52,11 @@ let parseExpr () =
     "()" |> failure
     "fun x, y -> y" |> failure
 
-    // "{}" |> success RecordEmpty
-    // "{ }" |> success RecordEmpty
+    "{}" |> success RecordEmpty
+    "{ }" |> success RecordEmpty
     "{" |> failure
-    // "a.x" |> success (RecordSelect(Var "a", "x"))
+    
+    // (RecordSelect(Var "a", "x")) |> success "a.x"
     // "{m - a}" |> success (RecordRestrict(Var "m", "a"))
     "{m - a" |> failure
     "m - a" |> failure
@@ -68,4 +70,4 @@ let parseExpr () =
     // "{ a = x, b = y | m}" |> success (RecordExtend("a", Var "x", RecordExtend("b", Var "y", Var "m")))
     // "{ a = x, b = y | {m - a} }" |> success (RecordExtend("a", Var "x", RecordExtend("b", Var "y", RecordRestrict(Var "m", "a"))))
     "{ b = y | m - a }" |> failure
-    // "let x = {a = f(x), b = y.b} in { a = fun z -> z | {x - a} }" |> success (Let("x", RecordExtend("a", Call(Var "f", [Var "x"]), RecordExtend("b", RecordSelect(Var "y", "b"), RecordEmpty)), RecordExtend("a", Fun(["z"], Var "z"), RecordRestrict(Var "x", "a"))))
+// "let x = {a = f(x), b = y.b} in { a = fun z -> z | {x - a} }" |> success (Let("x", RecordExtend("a", Call(Var "f", [Var "x"]), RecordExtend("b", RecordSelect(Var "y", "b"), RecordEmpty)), RecordExtend("a", Fun(["z"], Var "z"), RecordRestrict(Var "x", "a"))))

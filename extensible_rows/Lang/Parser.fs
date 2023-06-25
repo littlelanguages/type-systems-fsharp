@@ -37,7 +37,9 @@ let lowerIdentifier: Parser'<string> =
             Reply(Error, expectedIdentifier)
 
 let private factor: Parser'<Expr> =
-    (lowerIdentifier |>> Var) <|> (between (pchar_ws '(') (pchar_ws ')') expr)
+    (lowerIdentifier |>> Var)
+    <|> (between (pchar_ws '(') (pchar_ws ')') expr)
+    <|> (pchar_ws '{' >>. pchar_ws '}' >>% RecordEmpty)
 
 let private param: Parser'<List<Expr>> =
     (between (pchar_ws '(') (pchar_ws ')') (sepBy expr (pchar_ws ',')))
