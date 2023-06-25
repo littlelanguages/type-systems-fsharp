@@ -77,10 +77,10 @@ care of that problem.
 
 - [1] Didier Rémy. _Extending ML type system with a sorted equational theory._
   1992
-- [wikipedia](http://en.wikipedia.org/wiki/Hindley%E2%80%93Milner_type_system#Algorithm_W).
+- [2] [wikipedia](http://en.wikipedia.org/wiki/Hindley%E2%80%93Milner_type_system#Algorithm_W).
   _Hindley-Milner Type System: Algorithm W_
-- [Oleg Kiselyov](http://okmij.org/ftp/ML/generalization.html). _How OCaml type
+- [3] [Oleg Kiselyov](http://okmij.org/ftp/ML/generalization.html). _How OCaml type
   checker works -- or what polymorphism and garbage collection have in common_.
   2022
-- [Tom Primozic](https://github.com/tomprimozic/type-systems). _Type Systems_.
+- [4] [Tom Primozic](https://github.com/tomprimozic/type-systems). _Type Systems_.
   2014
