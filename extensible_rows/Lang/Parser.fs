@@ -22,7 +22,7 @@ let lowerIdentifier: Parser'<string> =
         satisfy isLower
         .>>. manyChars (satisfy (fun c -> isLetter c || isDigit c || c = '_'))
         .>> ws
-        |>> (fun (c, cs) -> (string c) + cs)
+        |>> fun (c, cs) -> (string c) + cs
 
     let expectedIdentifier = expected "identifier"
 
@@ -33,25 +33,27 @@ let lowerIdentifier: Parser'<string> =
         if reply.Status <> Ok || not (Set.contains reply.Result keyWordSet) then
             reply
         else
-            stream.BacktrackTo(state)
+            stream.BacktrackTo state
             Reply(Error, expectedIdentifier)
 
 let private factor: Parser'<Expr> =
     (lowerIdentifier |>> Var)
     <|> (between (pchar_ws '(') (pchar_ws ')') expr)
-    <|> (pchar_ws '{' >>. pchar_ws '}' >>% RecordEmpty)
+    <|> (pchar_ws '{' >>. pchar_ws '}' >>% RecordEmpty |> attempt)
+    <|> (pchar_ws '{' >>. expr .>> pchar_ws '-' .>>. lowerIdentifier .>> pchar_ws '}'
+         |>> fun (e, n) -> RecordRestrict(e, n))
 
 let private recordSelect: Parser'<Expr> =
-    (factor .>>. many ((pchar_ws '.') >>. lowerIdentifier))
-    |>> (fun (e, field_names) -> List.fold (fun e' n -> RecordSelect(e', n)) e field_names)
+    factor .>>. many ((pchar_ws '.') >>. lowerIdentifier)
+    |>> fun (e, field_names) -> List.fold (fun e' n -> RecordSelect(e', n)) e field_names
 
 let private param: Parser'<List<Expr>> =
     (between (pchar_ws '(') (pchar_ws ')') (sepBy expr (pchar_ws ',')))
-    <|> (lowerIdentifier |>> (fun name -> [ Var name ]))
+    <|> (lowerIdentifier |>> fun name -> [ Var name ])
 
 let private apply: Parser'<Expr> =
     recordSelect .>>. (many param)
-    |>> (fun (fn, arg_list) -> List.fold (fun f a -> Call(f, a)) fn arg_list)
+    |>> fun (fn, arg_list) -> List.fold (fun f a -> Call(f, a)) fn arg_list
 
 exprRef.Value <-
     apply
@@ -85,18 +87,18 @@ let private replace_ty_constants_with_vars var_name_list ty =
 let private ty, private tyRef = createParserForwardedToRef<Ty, unit> ()
 
 let private simpleTypeTail2: Parser'<Ty -> Ty> =
-    (pchar_ws ')' >>% (fun ty -> ty))
+    (pchar_ws ')' >>% fun ty -> ty)
     <|> (pchar_ws ',' >>. sepBy1 ty (pchar_ws ',') .>> pchar_ws ')' .>> pstring_ws "->"
          .>>. ty
          |>> fun (param_ty_list, return_ty) -> fun ty -> TArrow([ ty ] @ param_ty_list, return_ty))
 
 let private simpleTypeTail1: Parser'<Ty> =
-    ((pchar_ws ')' >>. pstring_ws "->" >>. ty)
+    (pchar_ws ')' >>. pstring_ws "->" >>. ty
      |>> fun return_ty -> TArrow([], return_ty))
     <|> ((ty .>>. simpleTypeTail2) |>> fun (ty, f) -> f ty)
 
 let private simpleType: Parser'<Ty> =
-    ((pchar_ws '(') >>. simpleTypeTail1)
+    (pchar_ws '(' >>. simpleTypeTail1)
     <|> ((lowerIdentifier
           .>>. opt (
               pchar_ws '[' >>. sepBy1 ty (pchar_ws ',') .>> pchar_ws ']'
