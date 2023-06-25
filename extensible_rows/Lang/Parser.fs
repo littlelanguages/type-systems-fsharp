@@ -41,12 +41,16 @@ let private factor: Parser'<Expr> =
     <|> (between (pchar_ws '(') (pchar_ws ')') expr)
     <|> (pchar_ws '{' >>. pchar_ws '}' >>% RecordEmpty)
 
+let private recordSelect: Parser'<Expr> =
+    (factor .>>. many ((pchar_ws '.') >>. lowerIdentifier))
+    |>> (fun (e, field_names) -> List.fold (fun e' n -> RecordSelect(e', n)) e field_names)
+
 let private param: Parser'<List<Expr>> =
     (between (pchar_ws '(') (pchar_ws ')') (sepBy expr (pchar_ws ',')))
     <|> (lowerIdentifier |>> (fun name -> [ Var name ]))
 
 let private apply: Parser'<Expr> =
-    factor .>>. (many param)
+    recordSelect .>>. (many param)
     |>> (fun (fn, arg_list) -> List.fold (fun f a -> Call(f, a)) fn arg_list)
 
 exprRef.Value <-

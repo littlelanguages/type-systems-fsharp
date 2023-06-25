@@ -54,9 +54,15 @@ let parseExpr () =
 
     "{}" |> success RecordEmpty
     "{ }" |> success RecordEmpty
+
     "{" |> failure
-    
-    // (RecordSelect(Var "a", "x")) |> success "a.x"
+
+    "a.x" |> success (RecordSelect(Var "a", "x"))
+    "a .x" |> success (RecordSelect(Var "a", "x"))
+    "a. x" |> success (RecordSelect(Var "a", "x"))
+    "a . x" |> success (RecordSelect(Var "a", "x"))
+    "a.b.c" |> success (RecordSelect(RecordSelect(Var "a", "b"), "c"))
+
     // "{m - a}" |> success (RecordRestrict(Var "m", "a"))
     "{m - a" |> failure
     "m - a" |> failure
