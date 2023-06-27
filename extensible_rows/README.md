@@ -1,8 +1,5 @@
 # Extensible Records with Scoped Labels
 
-
-**NOTE** - this is work in progress and not yet complete.  My suggestion is to keep checking back.
-
 This is an implementation of type inference for safe, polymorphic and extensible
 records.
 

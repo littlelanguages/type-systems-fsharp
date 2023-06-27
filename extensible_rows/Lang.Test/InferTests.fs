@@ -12,12 +12,13 @@ let private success expected input =
         let actual' = generalizedTy |> Expr.string_of_ty
 
         let expected' =
-            Parser.parseType expected
-            |> Result.map Expr.string_of_ty
-            |> Result.defaultValue "Error"
+            match Parser.parseType expected |> Result.map Expr.string_of_ty with
+            | Ok expected' -> expected'
+            | Error msg -> "Error: " + msg
 
         if (expected' <> actual') then
             printfn "expr: %s" input
+            printfn "ty: %A" (Parser.parseType expected)
             printfn "expected: %s" expected'
             printfn "actual: %s" actual'
 
@@ -105,6 +106,47 @@ let verifyInfer () =
 
     "let apply_curry = fun f -> fun x -> f(x) in apply_curry"
     |> success "forall[a b] (a -> b) -> a -> b"
+
+    "{}" |> success "{}"
+    "{}.x" |> failure "cannot unify types {x : _1 | _0} and {}"
+    "{a = one}" |> success "{a : int}"
+    "{a = one, b = true}" |> success "{a : int, b : bool}"
+    "{b = true, a = one}" |> success "{b : bool, a : int}"
+    "{a = one, b = true}.a" |> success "int"
+    "{a = one, b = true}.b" |> success "bool"
+    "{a = one, b = true}.c" |> failure "row does not contain label c"
+    "{f = fun x -> x}" |> success "forall[a] {f : a -> a}"
+    "let r = {a = id, b = succ} in choose(r.a, r.b)" |> success "int -> int"
+    "let r = {a = id, b = fun x -> x} in choose(r.a, r.b)" |> success "forall[a] a -> a"
+    "choose({a = one}, {})" |> failure "cannot unify types {a : int} and {}"
+    "choose({a = one, b = true}, {b = true, a = one})" |> success "{a : int, b : bool}"
+    "{ x = zero | { y = one | {} } }" |> success "{x : int, y : int}"
+    "choose({ x = zero | { y = one | {} } }, {x = one, y = zero})" |> success "{x : int, y : int}"
+    "{{} - x}" |> failure "cannot unify types {x : _1 | _0} and {}"
+    "{{x = one, y = zero} - x}" |> success "{y : int}"
+    "{ x = true | {x = one}}" |> success "{x : bool, x : int}"
+    "let a = {} in {b = one | a}" |> success "{b : int}"
+    "let a = {x = one} in {x = true | a}.x" |> success "bool"
+    "let a = {x = one} in a.y"|> failure "row does not contain label y"
+    "let a = {x = one} in {a - x}" |> success "{}"
+    "let a = {x = one} in let b = {x = true | a} in {b - x}.x" |> success "int"
+    "fun r -> {x = one | r}" |> success "forall[r] {r} -> {x : int | r}"
+    "fun r -> r.x" |> success "forall[r a] {x : a | r} -> a"
+    "let get_x = fun r -> r.x in get_x({y = one, x = zero})" |> success "int"
+    "let get_x = fun r -> r.x in get_x({y = one, z = true})" |> failure "row does not contain label x"
+    "fun r -> choose({x = zero | r}, {x = one | {}})" |> success "{} -> {x : int}"
+    "fun r -> choose({x = zero | r}, {x = one})" |> success "{} -> {x : int}"
+    "fun r -> choose({x = zero | r}, {x = one | r})" |> success "forall[r] {r} -> {x : int | r}"
+    "fun r -> choose({x = zero | r}, {y = one | r})" |> failure "recursive row types"
+    "let f = fun x -> x.t(one) in f({t = succ})" |> success "int"
+    "let f = fun x -> x.t(one) in f({t = id})" |> success "int"
+    "{x = one, x = true}" |> success "{x : int, x : bool}"
+    "let f = fun r -> let y = r.y in choose(r, {x = one, x = true}) in f" |> failure "row does not contain label y"
+    "fun r -> let y = choose(r.x, one) in let z = choose({r - x}.x, true) in r" |> success "forall[a r] {x : int, x : bool | r} -> {x : int, x : bool | r}"
+    "fun r -> choose({x = zero | r}, {x = one, x = true})" |> success "{x : bool} -> {x : int, x : bool}"
+    "fun r -> choose(r, {x = one, x = true})" |> success "{x : int, x : bool} -> {x : int, x : bool}"
+    "fun r -> choose({x = zero | r}, {x = true | r})" |> failure "cannot unify types int and bool"
+
 
 [<EntryPoint>]
 let main args = Program.main args

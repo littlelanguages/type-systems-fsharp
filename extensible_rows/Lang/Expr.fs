@@ -20,6 +20,11 @@ type Ty =
     | TApp of Ty * List<Ty> (* type application: `list[int]` *)
     | TArrow of List<Ty> * Ty (* function type: `(int, int) -> int` *)
     | TVar of TVar ref (* type variable *)
+    | TRecord of Row (* record type: `{<...>}` *)
+    | TRowEmpty (* empty row: `<>` *)
+    | TRowExtend of Name * Ty * Row (* row extension: `<a : _ | ...>` *)
+
+and Row = Ty (* the kind of rows - empty row, row variable, or row extension *)
 
 and TVar =
     | Unbound of Id * Level
@@ -90,9 +95,24 @@ let string_of_ty ty : string =
                  id_name_map.Add(id, name)
                  name)
         | TVar { contents = Unbound(id, _) } -> "_" + string id
-        | TVar { contents = Link ty } -> f is_simple ty in
+        | TVar { contents = Link ty } -> f is_simple ty
+        | TRecord row_ty -> "{" + f false row_ty + "}"
+        | TRowEmpty -> ""
+        | TRowExtend(label, ty, row_ty) ->
+            let rec g str =
+                function
+                | TRowEmpty -> str
+                | TRowExtend(label, ty, row_ty) -> g (str + ", " + label + " : " + f false ty) row_ty
+                | TVar { contents = Link ty } -> g str ty
+                | other_ty -> str + " | " + f false other_ty in
 
-    let ty_str = f false ty in
+            g (label + " : " + f false ty) row_ty in
+
+    let ty' = match ty with
+                        | TRowEmpty | TRowExtend _ -> TRecord ty
+                        | _ -> ty in
+
+    let ty_str = f false ty' in
 
     if !count > 0 then
         let var_names = id_name_map.Values |> List.ofSeq |> List.sort in

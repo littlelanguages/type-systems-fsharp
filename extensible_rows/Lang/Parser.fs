@@ -46,7 +46,8 @@ let private factor: Parser'<Expr> =
          >>. sepBy (lowerIdentifier .>> pchar_ws '=' .>>. expr) (pchar_ws ',')
          .>>. opt (pchar_ws '|' >>. expr)
          .>> pchar_ws '}'
-         |>> fun (fields, r) -> List.foldBack (fun (n, v) e -> RecordExtend(n, v, e)) fields (r |> Option.defaultValue RecordEmpty))
+         |>> fun (fields, r) ->
+             List.foldBack (fun (n, v) e -> RecordExtend(n, v, e)) fields (r |> Option.defaultValue RecordEmpty))
 
 let private recordSelect: Parser'<Expr> =
     factor .>>. many ((pchar_ws '.') >>. lowerIdentifier)
@@ -54,7 +55,7 @@ let private recordSelect: Parser'<Expr> =
 
 let private param: Parser'<List<Expr>> =
     (between (pchar_ws '(') (pchar_ws ')') (sepBy expr (pchar_ws ',')))
-    <|> (lowerIdentifier |>> fun name -> [ Var name ])
+    <|> (expr |>> fun e -> [ e ])
 
 let private apply: Parser'<Expr> =
     recordSelect .>>. (many param)
@@ -85,7 +86,10 @@ let private replace_ty_constants_with_vars var_name_list ty =
                 ty
         | TVar _ -> ty
         | TApp(ty, ty_arg_list) -> TApp(f ty, List.map f ty_arg_list)
-        | TArrow(param_ty_list, return_ty) -> TArrow(List.map f param_ty_list, f return_ty) in
+        | TArrow(param_ty_list, return_ty) -> TArrow(List.map f param_ty_list, f return_ty)
+        | TRecord row -> TRecord(f row)
+        | TRowEmpty -> ty
+        | TRowExtend(label, ty, row) -> TRowExtend(label, f ty, f row)
 
     f ty
 
@@ -113,6 +117,12 @@ let private simpleType: Parser'<Ty> =
              match ty_arg_list_opt with
              | None -> TConst name
              | Some f -> f (TConst name))
+    <|> (pchar_ws '{' >>. ty .>> pchar_ws '}' |>> TRecord |> attempt)
+    <|> (pchar_ws '{' >>. sepBy (lowerIdentifier .>> pchar_ws ':' .>>. ty) (pchar_ws ',')
+         .>>. opt (pchar_ws '|' >>. ty)
+         .>> pchar_ws '}'
+         |>> fun (fields, r) ->
+             (List.foldBack (fun (n, v) e -> TRowExtend(n, v, e)) fields (r |> Option.defaultValue TRowEmpty)) |> TRecord)
 
 tyRef.Value <-
     simpleType .>>. many (pstring_ws "->" >>. simpleType)
